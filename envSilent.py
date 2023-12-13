@@ -243,7 +243,7 @@ class MapEnv(gym.Env):
                 dict(
                     car_signals=[self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3],
                     car_position=(self.canvas.car.x, self.canvas.car.y),
-                    goal_position=np.array(self.goal_positions[self.goal_index]),
+                    goal_position=(self.goal_positions[self.goal_index]),
                     orientation=orientation,
                     distance=distance,
                     score=score
@@ -290,7 +290,7 @@ class MapEnv(gym.Env):
         self.state = dict(
             car_signals=self.get_signals(),
             car_position=(self.canvas.car.x, self.canvas.car.y),
-            goal_position=np.array(self.canvas.goalpost.x, self.canvas.goalpost.y),
+            goal_position=(self.canvas.goalpost.x, self.canvas.goalpost.y),
             orientation=self.get_goal_orientation(),
             distance=self.get_goal_distance(),
             score=0.0
