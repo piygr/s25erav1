@@ -11,45 +11,72 @@ from PIL import Image as PILImage
 
 class Car():
 
-    angle = NumericProperty(0)
-    rotation = NumericProperty(0)
-    velocity_x = NumericProperty(0)
-    velocity_y = NumericProperty(0)
-    velocity = ReferenceListProperty(velocity_x, velocity_y)
-    sensor1_x = NumericProperty(0)
-    sensor1_y = NumericProperty(0)
-    sensor1 = ReferenceListProperty(sensor1_x, sensor1_y)
-    sensor2_x = NumericProperty(0)
-    sensor2_y = NumericProperty(0)
-    sensor2 = ReferenceListProperty(sensor2_x, sensor2_y)
-    sensor3_x = NumericProperty(0)
-    sensor3_y = NumericProperty(0)
-    sensor3 = ReferenceListProperty(sensor3_x, sensor3_y)
+    def __init__(self):
+        self.angle = NumericProperty(0)
+        self.rotation = NumericProperty(0)
 
-    signal1 = NumericProperty(0)
-    signal2 = NumericProperty(0)
-    signal3 = NumericProperty(0)
+        self.velocity_x = NumericProperty(0)
+        self.velocity_y = NumericProperty(0)
+        self.velocity = ReferenceListProperty(self.velocity_x, self.velocity_y)
+
+        self.sensor1_x = NumericProperty(0)
+        self.sensor1_y = NumericProperty(0)
+        self.sensor1 = ReferenceListProperty(self.sensor1_x, self.sensor1_y)
+
+        self.sensor2_x = NumericProperty(0)
+        self.sensor2_y = NumericProperty(0)
+        self.sensor2 = ReferenceListProperty(self.sensor2_x, self.sensor2_y)
+
+        self.sensor3_x = NumericProperty(0)
+        self.sensor3_y = NumericProperty(0)
+        self.sensor3 = ReferenceListProperty(self.sensor3_x, self.sensor3_y)
+
+        self.signal1 = NumericProperty(0)
+        self.signal2 = NumericProperty(0)
+        self.signal3 = NumericProperty(0)
+
+        self.x = NumericProperty(0)
+        self.y = NumericProperty(0)
+
+        self.pos = ReferenceListProperty(self.x, self.y)
 
 
 class Game():
-    car = ObjectProperty(None)
-    ball1 = ObjectProperty(None)
-    ball2 = ObjectProperty(None)
-    ball3 = ObjectProperty(None)
-    goalpost = ObjectProperty(None)
+    def __init__(self):
+        self.car = Car()
+        self.ball1 = Ball1()
+        self.ball2 = Ball2()
+        self.ball3 = Ball3()
+        self.goalpost = GoalPost()
 
 
 class Ball1():
-    pass
+    def __init__(self):
+        self.x = NumericProperty(0.0)
+        self.y = NumericProperty(0.0)
+
+        self.pos = ReferenceListProperty(self.x, self.y)
 
 class Ball2():
-    pass
+    def __init__(self):
+        self.x = NumericProperty(0.0)
+        self.y = NumericProperty(0.0)
+
+        self.pos = ReferenceListProperty(self.x, self.y)
 
 class Ball3():
-    pass
+    def __init__(self):
+        self.x = NumericProperty(0.0)
+        self.y = NumericProperty(0.0)
+
+        self.pos = ReferenceListProperty(self.x, self.y)
 
 class GoalPost():
-    pass
+    def __init__(self):
+        self.x = NumericProperty(0.0)
+        self.y = NumericProperty(0.0)
+
+        self.pos = ReferenceListProperty(self.x, self.y)
 
 
 class MapEnv(gym.Env):
@@ -258,7 +285,7 @@ class MapEnv(gym.Env):
     def reset(self, **kwargs):
         super().reset(seed=kwargs.get('seed', 0))
         print("---------RESET---------")
-        self.canvas.car.center = (1132, 1092)
+        self.canvas.car.pos = (1132, 1092)
         self.canvas.car.velocity = Vector(2, 0)
 
         self.goal_index = 0
@@ -267,7 +294,7 @@ class MapEnv(gym.Env):
 
         self.state = dict(
             car_signals=self.get_signals(),
-            car_position=self.canvas.car.center,
+            car_position=self.canvas.car.pos,
             goal_position=np.array(self.canvas.goalpost.pos),
             orientation=self.get_goal_orientation(),
             distance=self.get_goal_distance(),
