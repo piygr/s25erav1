@@ -4,7 +4,7 @@ import numpy as np
 #from kivy.uix.widget import Widget
 
 #from kivy.config import Config
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
+#from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
 from kivy.vector import Vector
 
 from PIL import Image as PILImage
@@ -12,33 +12,28 @@ from PIL import Image as PILImage
 class Car():
 
     def __init__(self):
-        self.angle = NumericProperty(0)
-        self.rotation = NumericProperty(0)
+        self.angle = 0.0
+        self.rotation = 0.0
 
-        self.velocity_x = NumericProperty(0)
-        self.velocity_y = NumericProperty(0)
-        self.velocity = ReferenceListProperty(self.velocity_x, self.velocity_y)
+        #self.velocity_x = 0.0
+        #self.velocity_y = 0.0
+        self.velocity = Vector(0, 0)
 
-        self.sensor1_x = NumericProperty(0)
-        self.sensor1_y = NumericProperty(0)
-        self.sensor1 = ReferenceListProperty(self.sensor1_x, self.sensor1_y)
+        self.sensor1_x = 0.0
+        self.sensor1_y = 0.0
 
-        self.sensor2_x = NumericProperty(0)
-        self.sensor2_y = NumericProperty(0)
-        self.sensor2 = ReferenceListProperty(self.sensor2_x, self.sensor2_y)
+        self.sensor2_x = 0.0
+        self.sensor2_y = 0.0
 
-        self.sensor3_x = NumericProperty(0)
-        self.sensor3_y = NumericProperty(0)
-        self.sensor3 = ReferenceListProperty(self.sensor3_x, self.sensor3_y)
+        self.sensor3_x = 0.0
+        self.sensor3_y = 0.0
 
-        self.signal1 = NumericProperty(0)
-        self.signal2 = NumericProperty(0)
-        self.signal3 = NumericProperty(0)
+        self.signal1 = 0.0
+        self.signal2 = 0.0
+        self.signal3 = 0.0
 
-        self.x = NumericProperty(0)
-        self.y = NumericProperty(0)
-
-        self.pos = ReferenceListProperty(self.x, self.y)
+        self.x = 0.0
+        self.y = 0.0
 
 
 class Game():
@@ -52,32 +47,25 @@ class Game():
 
 class Ball1():
     def __init__(self):
-        self.x = NumericProperty(0.0)
-        self.y = NumericProperty(0.0)
+        self.x = 0.0
+        self.y = 0.0
 
-        self.pos = ReferenceListProperty(self.x, self.y)
 
 class Ball2():
     def __init__(self):
-        self.x = NumericProperty(0.0)
-        self.y = NumericProperty(0.0)
+        self.x = 0.0
+        self.y = 0.0
 
-        self.pos = ReferenceListProperty(self.x, self.y)
 
 class Ball3():
     def __init__(self):
-        self.x = NumericProperty(0.0)
-        self.y = NumericProperty(0.0)
-
-        self.pos = ReferenceListProperty(self.x, self.y)
+        self.x = 0.0
+        self.y = 0.0
 
 class GoalPost():
     def __init__(self):
-        self.x = NumericProperty(0.0)
-        self.y = NumericProperty(0.0)
-
-        self.pos = ReferenceListProperty(self.x, self.y)
-
+        self.x = 0.0
+        self.y = 0.0
 
 class MapEnv(gym.Env):
 
@@ -109,7 +97,7 @@ class MapEnv(gym.Env):
 
         self.observation_space = self._get_observation_space()
         self.state = {}
-        self.canvas.car.pos = (1132, 1092)
+        self.canvas.car.x, self.canvas.car.y = (1132, 1092)
 
     def _get_observation_space(self):
         low_signals = np.array([0.0, 0.0, 0.0])
@@ -254,7 +242,7 @@ class MapEnv(gym.Env):
             self.state.update(
                 dict(
                     car_signals=[self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3],
-                    car_position=self.canvas.car.pos,
+                    car_position=(self.canvas.car.x, self.canvas.car.y),
                     goal_position=np.array(self.goal_positions[self.goal_index]),
                     orientation=orientation,
                     distance=distance,
@@ -266,18 +254,25 @@ class MapEnv(gym.Env):
 
 
     def move(self, rotation):
-        self.canvas.car.pos = Vector(*self.canvas.car.velocity) + self.canvas.car.pos
+        _vel = Vector(*self.canvas.car.velocity)
+
+        self.canvas.car.x, self.canvas.car.y = _vel.x + self.canvas.car.x, _vel.y + self.canvas.car.y
         self.canvas.car.rotation = rotation
 
         self.canvas.car.angle = self.canvas.car.angle + self.canvas.car.rotation
 
-        self.canvas.car.sensor1 = Vector(30, 0).rotate(self.canvas.car.angle) + self.canvas.car.pos
-        self.canvas.car.sensor2 = Vector(30, 0).rotate((self.canvas.car.angle+30)%360) + self.canvas.car.pos
-        self.canvas.car.sensor3 = Vector(30, 0).rotate((self.canvas.car.angle-30)%360) + self.canvas.car.pos
+        s1 = Vector(30, 0).rotate(self.canvas.car.angle)
+        self.canvas.car.sensor1_x, self.canvas.car.sensor1_y = s1.x + self.canvas.car.x, s1.y + self.canvas.car.y
 
-        self.canvas.ball1.pos = self.canvas.car.sensor1
-        self.canvas.ball2.pos = self.canvas.car.sensor2
-        self.canvas.ball3.pos = self.canvas.car.sensor3
+        s2 = Vector(30, 0).rotate((self.canvas.car.angle+30)%360)
+        self.canvas.car.sensor2_x, self.canvas.car.sensor2_y = s2.x + self.canvas.car.x, s2.y + self.canvas.car.y
+
+        s3 = Vector(30, 0).rotate((self.canvas.car.angle-30)%360)
+        self.canvas.car.sensor3_x, self.canvas.car.sensor3_y = s3.x + self.canvas.car.x, s3.y + self.canvas.car.y
+
+        self.canvas.ball1.x, self.canvas.ball1.y = self.canvas.car.sensor1_x, self.canvas.car.sensor1_y
+        self.canvas.ball2.x, self.canvas.ball2.y = self.canvas.car.sensor2_x, self.canvas.car.sensor1_y
+        self.canvas.ball3.x, self.canvas.ball3.y = self.canvas.car.sensor3_x, self.canvas.car.sensor1_y
 
         #return self.update_state()
 
@@ -285,17 +280,17 @@ class MapEnv(gym.Env):
     def reset(self, **kwargs):
         super().reset(seed=kwargs.get('seed', 0))
         print("---------RESET---------")
-        self.canvas.car.pos = (1132, 1092)
+        self.canvas.car.x, self.canvas.car.y  = (1132, 1092)
         self.canvas.car.velocity = Vector(2, 0)
 
         self.goal_index = 0
 
-        self.canvas.goalpost.pos = self.goal_positions[self.goal_index]
+        self.canvas.goalpost.x, self.canvas.car.y = self.goal_positions[self.goal_index]
 
         self.state = dict(
             car_signals=self.get_signals(),
-            car_position=self.canvas.car.pos,
-            goal_position=np.array(self.canvas.goalpost.pos),
+            car_position=(self.canvas.car.x, self.canvas.car.y),
+            goal_position=np.array(self.canvas.goalpost.x, self.canvas.goalpost.y),
             orientation=self.get_goal_orientation(),
             distance=self.get_goal_distance(),
             score=0.0
