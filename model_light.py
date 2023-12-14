@@ -78,9 +78,9 @@ class Critic(nn.Module):
         self.layer_2 = nn.Linear(50, 30)
         self.layer_3 = nn.Linear(30, 1)
         # Defining the second Critic neural network
-        self.layer_4 = nn.Linear(state_dim + action_dim, 400)
-        self.layer_5 = nn.Linear(400, 300)
-        self.layer_6 = nn.Linear(300, 1)
+        self.layer_4 = nn.Linear(state_dim + action_dim, 50)
+        self.layer_5 = nn.Linear(50, 30)
+        self.layer_6 = nn.Linear(30, 1)
 
     def forward(self, x, u):
         xu = torch.cat([x, u], 1)
