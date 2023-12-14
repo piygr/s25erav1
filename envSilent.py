@@ -213,20 +213,20 @@ class MapEnv(gym.Env):
             reward += 1.0
             # done = False
 
-        if self.canvas.car.x < 20:
-            self.canvas.car.x = 20
+        if self.canvas.car.center_x < 30:
+            self.canvas.car.center_x = 30
             reward = -10.0
 
-        elif self.canvas.car.x > self.map_size[0] - 20:
-            self.canvas.car.x = self.map_size[0] - 20
+        elif self.canvas.car.center_x > self.map_size[0] - 30:
+            self.canvas.car.center_x = self.map_size[0] - 30
             reward = -10.0
 
-        if self.canvas.car.y < 20:
-            self.canvas.car.y = 20
+        if self.canvas.car.center_y < 30:
+            self.canvas.car.center_y = 30
             reward = -10.0
 
-        elif self.canvas.car.y > self.map_size[1] - 20:
-            self.canvas.car.y = self.map_size[1] - 20
+        elif self.canvas.car.center_y > self.map_size[1] - 30:
+            self.canvas.car.center_y = self.map_size[1] - 30
             reward = -10.0
 
         reward = round(reward, 2)
