@@ -24,9 +24,24 @@ class ReplayBuffer(object):
             self.storage.append(transition)
             self.ptr = (self.ptr + 1) % self.max_size
 
+
     def sample(self, batch_size):
-        ind = np.random.randint(0, len(self.storage), size=batch_size)
+        #sorted_buffer = sorted(self.storage, key = lambda x: x[3], reverse=True)
         batch_states, batch_next_states, batch_actions, batch_rewards, batch_dones = [], [], [], [], []
+
+        '''for i in range(batch_size):
+            state, next_state, action, reward, done = sorted_buffer[i]
+
+            if reward > 0:
+                batch_states.append(np.array(state, copy=False))
+                batch_next_states.append(np.array(next_state, copy=False))
+                batch_actions.append(np.array(action, copy=False))
+                batch_rewards.append(np.array(reward, copy=False))
+                batch_dones.append(np.array(done, copy=False))
+            else:
+                break'''
+
+        ind = np.random.randint(0, len(self.storage), size=batch_size-len(batch_states))
         for i in ind:
             state, next_state, action, reward, done = self.storage[i]
             batch_states.append(np.array(state, copy=False))
@@ -34,6 +49,7 @@ class ReplayBuffer(object):
             batch_actions.append(np.array(action, copy=False))
             batch_rewards.append(np.array(reward, copy=False))
             batch_dones.append(np.array(done, copy=False))
+
         return np.array(batch_states), np.array(batch_next_states), np.array(batch_actions), np.array(batch_rewards).reshape(-1, 1), np.array(batch_dones).reshape(-1, 1)
 
 
@@ -175,7 +191,7 @@ class TD3(object):
 
 
 
-def evaluate_policy(env, policy, eval_episodes=10):
+def evaluate_policy(env, policy, eval_episodes=10, seed=0):
 
     avg_reward = 0.
     for _ in range(eval_episodes):

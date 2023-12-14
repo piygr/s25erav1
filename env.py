@@ -1,5 +1,5 @@
 import gymnasium as gym
-import math
+import math, random
 import numpy as np
 from kivy.uix.widget import Widget
 
@@ -76,13 +76,15 @@ class MapEnv(gym.Env):
         self.goal_index = 0
         #self.goal_positions = [(1400, 150), (2224, 1041), (118, 270)]
 
-        self.goal_positions = [(1200, 1110), (1500, 1200), (1710, 1100), (1100, 1100), (800, 1000)]
+        self.goal_positions = [(1200, 1110), (1500, 1200), (1710, 1100), (1100, 1100), (800, 1000), (1400, 150), (2224, 1041), (118, 270)]
 
         self.log = ''
 
         self.observation_space = self._get_observation_space()
         self.state = {}
-        self.canvas.car.pos = (1132, 1092)
+        self.canvas.car.center = (1132, 1092)
+        self.max_speed = 2.0
+        self.follow_flag = False
 
     def _get_observation_space(self):
         low_signals = np.array([0.0, 0.0, 0.0])
@@ -93,8 +95,7 @@ class MapEnv(gym.Env):
         return gym.spaces.Box(
             low=np.concatenate([low_signals, low_orientation]),
             high=np.concatenate([high_signals, high_orientation]),
-            shape=(5, ),
-            dtype=np.float16
+            shape=(5, )
         )
 
 
@@ -104,46 +105,52 @@ class MapEnv(gym.Env):
 
 
     def get_signals(self):
-        s1 = int(
+        s1 = round(int(
             np.sum(
                 self.sand[
                 int(self.canvas.car.sensor1_x) - 10:int(self.canvas.car.sensor1_x) + 10,
                 int(self.canvas.car.sensor1_y) - 10:int(self.canvas.car.sensor1_y) + 10
                 ]
             )
-        ) / 400.
+        ) / 400., 2)
 
-        s2 = int(
+        s2 = round(int(
             np.sum(
                 self.sand[
                 int(self.canvas.car.sensor2_x)-10:int(self.canvas.car.sensor2_x)+10,
                 int(self.canvas.car.sensor2_y)-10:int(self.canvas.car.sensor2_y)+10
                 ]
             )
-        )/400.
+        )/400., 2)
 
-        s3 = int(
+        s3 = round(int(
             np.sum(
                 self.sand[
                 int(self.canvas.car.sensor3_x)-10:int(self.canvas.car.sensor3_x)+10,
                 int(self.canvas.car.sensor3_y)-10:int(self.canvas.car.sensor3_y)+10
                 ]
             )
-        )/400.
+        )/400., 2)
 
         return [s1, s2, s3]
 
 
     def get_goal_distance(self):
-        return np.sqrt(
-            (self.canvas.car.x - self.goal_positions[self.goal_index][0]) ** 2 +
-            (self.canvas.car.y - self.goal_positions[self.goal_index][1]) ** 2)
+        goal = self.state.get('goal_position')
+        distance = np.sqrt(
+            (int(self.canvas.car.center_x) - goal[0]) ** 2 +
+            (int(self.canvas.car.center_y) - goal[1]) ** 2)
+
+        distance = round(distance, 2)
+        return distance
 
 
     def get_goal_orientation(self):
-        xx = self.goal_positions[self.goal_index][0] - self.canvas.car.x
-        yy = self.goal_positions[self.goal_index][1] - self.canvas.car.y
+        goal = self.state.get('goal_position')
+        xx =  goal[0] - int(self.canvas.car.center_x)
+        yy = goal[1] - int(self.canvas.car.center_y)
         orientation = Vector(*self.canvas.car.velocity).angle((xx, yy)) / 180.0
+        orientation = round(orientation, 3)
 
         return orientation
 
@@ -155,102 +162,99 @@ class MapEnv(gym.Env):
         orientation = self.get_goal_orientation()
 
         self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3 = self.get_signals()
-        print('signals: ', self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3)
+        #print('signals: ', self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3)
 
         longueur = self.map_size[0]
         largeur = self.map_size[1]
 
-        if self.canvas.car.sensor1_x > longueur - 10 or self.canvas.car.sensor1_x < 10 or \
-                self.canvas.car.sensor1_y > largeur - 10 or self.canvas.car.sensor1_y < 10:
-            self.canvas.car.signal1 = 10.
+        if self.canvas.car.sensor1_x > longueur - 15 or self.canvas.car.sensor1_x < 15 or \
+                self.canvas.car.sensor1_y > largeur - 15 or self.canvas.car.sensor1_y < 15:
+            self.canvas.car.signal1 = 1.
 
-        if self.canvas.car.sensor2_x > longueur - 10 or self.canvas.car.sensor2_x < 10 or \
-                self.canvas.car.sensor2_y > largeur - 10 or self.canvas.car.sensor2_y < 10:
-            self.canvas.car.signal2 = 10.
+        if self.canvas.car.sensor2_x > longueur - 15 or self.canvas.car.sensor2_x < 15 or \
+                self.canvas.car.sensor2_y > largeur - 15 or self.canvas.car.sensor2_y < 15:
+            self.canvas.car.signal2 = 1.
 
-        if self.canvas.car.sensor3_x > longueur - 10 or self.canvas.car.sensor3_x < 10 or \
-                self.canvas.car.sensor3_y > largeur - 10 or self.canvas.car.sensor3_y < 10:
-            self.canvas.car.signal3 = 10.
+        if self.canvas.car.sensor3_x > longueur - 15 or self.canvas.car.sensor3_x < 15 or \
+                self.canvas.car.sensor3_y > largeur - 15 or self.canvas.car.sensor3_y < 15:
+            self.canvas.car.signal3 = 1.
 
 
-        if self.sand[int(self.canvas.car.x), int(self.canvas.car.y)] > 0:
-            self.canvas.car.velocity = Vector(0.5, 0).rotate(self.canvas.car.angle)
-            done = True
+        if self.sand[int(self.canvas.car.center_x), int(self.canvas.car.center_y)] > 0:
+            #done = True
             reward = -1.0
-            score = self.state['score'] + reward
-
-            self.state.update(
-                dict(
-                    car_signals=[self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3],
-                    orientation=orientation,
-                    distance=distance,
-                    score=score
-                )
-            )
-
-            return self._get_observation(), reward, done, {}
 
         else:  # otherwise
-            self.canvas.car.velocity = Vector(2, 0).rotate(self.canvas.car.angle)
             reward = -0.2
 
-            if distance < self.state.get('distance'):
-                reward = 0.1
+            if self.follow_flag:
+                if distance < self.state.get('distance'):
+                    reward = 0.1
 
-            if distance < 25:
-                self.goal_index = (self.goal_index + 1) % len(self.goal_positions)
 
-                self.canvas.goalpost.x = self.goal_positions[self.goal_index][0]
-                self.canvas.goalpost.y = self.goal_positions[self.goal_index][1]
+        if distance < 25:
+            self.goal_index = (self.goal_index + 1) % len(self.goal_positions)
 
-                reward = 1.0
-                done = False
+            self.canvas.goalpost.x = self.goal_positions[self.goal_index][0]
+            self.canvas.goalpost.y = self.goal_positions[self.goal_index][1]
 
-            if self.canvas.car.x < 10:
-                self.canvas.car.x = 10
-                reward = -1.0
+            reward += 1.0
+            #done = False
 
-            elif self.canvas.car.x > self.map_size[0] - 10:
-                self.canvas.car.x = self.map_size[0] - 10
-                reward = -1.0
+        if self.canvas.car.x < 20:
+            self.canvas.car.x = 20
+            reward = -10.0
 
-            if self.canvas.car.y < 10:
-                self.canvas.car.y = 10
-                reward = -1.0
+        elif self.canvas.car.x > self.map_size[0] - 20:
+            self.canvas.car.x = self.map_size[0] - 20
+            reward = -10.0
 
-            elif self.canvas.car.y > self.map_size[1] - 10:
-                self.canvas.car.y = self.map_size[1] - 10
-                reward = -1.0
+        if self.canvas.car.y < 20:
+            self.canvas.car.y = 20
+            reward = -10.0
 
-            score = self.state['score'] + reward
+        elif self.canvas.car.y > self.map_size[1] - 20:
+            self.canvas.car.y = self.map_size[1] - 20
+            reward = -10.0
 
-            self.state.update(
-                dict(
-                    car_signals=[self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3],
-                    car_position=self.canvas.car.pos,
-                    goal_position=np.array(self.goal_positions[self.goal_index]),
-                    orientation=orientation,
-                    distance=distance,
-                    score=score
-                )
+        reward = round(reward, 2)
+        score = self.state['score'] + reward
+
+        self.state.update(
+            dict(
+                car_signals=[self.canvas.car.signal1, self.canvas.car.signal2, self.canvas.car.signal3],
+                car_position=(int(self.canvas.car.center_x), int(self.canvas.car.center_y)),
+                goal_position=np.array(self.goal_positions[self.goal_index]),
+                orientation=orientation,
+                distance=distance,
+                score=score
             )
+        )
 
-            return self._get_observation(), reward, done, {}
+        print('Reward: ', reward)
+        return self._get_observation(), reward, done, {}
 
 
     def move(self, rotation):
-        self.canvas.car.pos = Vector(*self.canvas.car.velocity) + self.canvas.car.pos
+
+        if self.sand[int(self.canvas.car.center_x), int(self.canvas.car.center_y)] > 0:
+            new_speed = 0.5
+        else:
+            new_speed = 2. #self.max_speed*(1.0 - abs(rotation)/self.max_action)
+
         self.canvas.car.rotation = rotation
 
         self.canvas.car.angle = self.canvas.car.angle + self.canvas.car.rotation
 
-        self.canvas.car.sensor1 = Vector(30, 0).rotate(self.canvas.car.angle) + self.canvas.car.pos
-        self.canvas.car.sensor2 = Vector(30, 0).rotate((self.canvas.car.angle+30)%360) + self.canvas.car.pos
-        self.canvas.car.sensor3 = Vector(30, 0).rotate((self.canvas.car.angle-30)%360) + self.canvas.car.pos
+        self.canvas.car.sensor1 = Vector(30, 0).rotate(self.canvas.car.angle) + self.canvas.car.center
+        self.canvas.car.sensor2 = Vector(30, 0).rotate((self.canvas.car.angle+30)%360) + self.canvas.car.center
+        self.canvas.car.sensor3 = Vector(30, 0).rotate((self.canvas.car.angle-30)%360) + self.canvas.car.center
 
-        self.canvas.ball1.pos = self.canvas.car.sensor1
-        self.canvas.ball2.pos = self.canvas.car.sensor2
-        self.canvas.ball3.pos = self.canvas.car.sensor3
+        self.canvas.ball1.center = self.canvas.car.sensor1
+        self.canvas.ball2.center = self.canvas.car.sensor2
+        self.canvas.ball3.center = self.canvas.car.sensor3
+
+        self.canvas.car.center = Vector(new_speed, 0).rotate(self.canvas.car.angle) + self.canvas.car.center
 
         #return self.update_state()
 
@@ -258,10 +262,15 @@ class MapEnv(gym.Env):
     def reset(self, **kwargs):
         super().reset(seed=kwargs.get('seed', 0))
         print("---------RESET---------")
-        self.canvas.car.center = (1132, 1092)
+
+        car_idx = random.randint(0, len(self.goal_positions)-1)
+        self.canvas.car.center = self.goal_positions[car_idx]
         self.canvas.car.velocity = Vector(2, 0)
 
-        self.goal_index = 0
+        self.goal_index = random.randint(0, len(self.goal_positions)-1)
+
+        if car_idx == self.goal_index:
+            self.goal_index = (self.goal_index+1)%len(self.goal_positions)
 
         self.canvas.goalpost.pos = self.goal_positions[self.goal_index]
 
@@ -269,24 +278,22 @@ class MapEnv(gym.Env):
             car_signals=self.get_signals(),
             car_position=self.canvas.car.center,
             goal_position=np.array(self.canvas.goalpost.pos),
-            orientation=self.get_goal_orientation(),
-            distance=self.get_goal_distance(),
             score=0.0
         )
+        
+        self.state.update(dict(
+            orientation=self.get_goal_orientation(),
+            distance=self.get_goal_distance()
+        ))
 
         return self._get_observation()
 
 
     def step(self, action):
-        print(1,
-              self.state.get('goal_position')[0],
-              self.state.get('goal_position')[1],
-              self.state.get('distance'),
-              int(self.canvas.car.x), int(self.canvas.car.y),
-              self.sand[int(self.canvas.car.x), int(self.canvas.car.y)])
 
         self.move( action.item() )
         obs, reward, done, _ = self.update_state()
+        print(self.state)
         return obs, reward, done, _
 
 

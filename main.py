@@ -27,11 +27,11 @@ class CarApp(App):
         self.mode = mode
         self.seed = random.randint(0, 10000)
 
-        if self.mode == 'train':
+        if self.mode in ['train', 'train2', 'eval']:
             self.training_config = dict(
-                start_timesteps=5e3,
-                eval_freq=5e3,
-                max_timesteps=5e5,
+                start_timesteps=1e4,
+                eval_freq=1e4,
+                max_timesteps=20000,
                 save_models=True,
                 expl_noise = 0.1,
                 batch_size = 100,
@@ -41,7 +41,8 @@ class CarApp(App):
                 noise_clip = 0.5,
                 policy_freq = 2,
                 env_name = 'MapEnv',
-                max_episode_steps = 1000
+                max_episode_steps = 1500,
+                follow_goals_timesteps=0
             )
 
             #state_dim = env.observation_space.shape[0]
@@ -54,11 +55,11 @@ class CarApp(App):
         self.env = MapEnv()
         self.obs = self.env.reset(seed=self.seed)
 
-        if self.mode == 'train':
+        if self.mode in ['train', 'train2']:
             self.file_name = "%s_%s_%s" % ("TD3", self.training_config['env_name'], str(self.seed))
-            self.policy = TD3(self.env.observation_space.shape[0], self.env.action_space.shape[0], self.env.max_action)
+            self.policy = TD3(self.env.observation_space.shape[0], self.env.action_space.shape[0], float(self.env.action_space.high[0]))
             self.replay_buffer = ReplayBuffer()
-            self.evaluations = [evaluate_policy(self.env, self.policy)]
+            self.evaluations = []
 
             self.total_timesteps = 0
             self.timesteps_since_eval = 0
@@ -66,6 +67,33 @@ class CarApp(App):
             self.done = True
             self.episode_timesteps = 0
             self.episode_reward = 0.0
+
+        elif self.mode in ['eval']:
+            self.seed = 3249
+            self.env.follow_flag = True
+            self.total_timesteps = 0
+            self.episode_num = 0
+            self.episode_timesteps = 0
+            self.episode_reward = 0.0
+
+            self.file_name = "%s_%s_%s" % ("TD3", self.training_config['env_name'], str(self.seed))
+            print("---------------------------------------")
+            print("Settings: %s" % (self.file_name))
+            print("---------------------------------------")
+
+            self.eval_episodes = 10
+            self.episode_num = 0
+            # save_env_vid = True
+            self.max_episode_steps = 2000
+
+            # self.env.reset(seed=seed)
+            torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
+            state_dim = self.env.observation_space.shape[0]
+            action_dim = self.env.action_space.shape[0]
+            max_action = float(self.env.action_space.high[0])
+            self.policy = TD3(state_dim, action_dim, max_action)
+            self.policy.load(self.file_name, './pytorch_models/')
 
 
         def render(dt):
@@ -160,8 +188,118 @@ class CarApp(App):
 
                     self.clk.cancel()
 
+            if self.mode == 'train2':
+                if self.episode_timesteps == 0:
+                    self.obs = self.env.reset(seed=self.seed)
+                    self.avg_reward = 0.
+
+                if self.total_timesteps < self.training_config['max_timesteps']:
+                    if self.episode_timesteps < self.training_config['max_episode_steps']:
+                        if self.total_timesteps < self.training_config['start_timesteps']:
+                            action = self.env.action_space.sample()
+                        else:
+                            Window.hide()
+                            action = self.policy.select_action(np.array(self.obs))
+
+                            # If the explore_noise parameter is not 0, we add noise to the action and we clip it
+                            if self.training_config['expl_noise'] != 0:
+                                action = (action + np.random.normal(0, self.training_config['expl_noise'],
+                                                                    size=self.env.action_space.shape[0])).clip(
+                                    self.env.action_space.low, self.env.action_space.high)
+
+                            print(self.total_timesteps, '. Policy Action: ', action)
+
+                        new_obs, reward, done, _ = self.env.step(action)
+                        self.replay_buffer.add((self.obs, new_obs, action, reward, False))
+
+                        if self.total_timesteps > self.training_config['start_timesteps'] \
+                            and self.total_timesteps % (self.training_config['batch_size']/10) == 0:
+
+                            self.policy.train(
+                                self.replay_buffer,
+                                self.episode_timesteps,
+                                self.training_config['batch_size'],
+                                self.training_config['discount'],
+                                self.training_config['tau'],
+                                self.training_config['policy_noise'],
+                                self.training_config['noise_clip'],
+                                self.training_config['policy_freq']
+                            )
+
+                            if self.training_config['save_models']:
+                                self.policy.save("%s" % (self.file_name), directory="./pytorch_models")
+                                np.save("./results/%s" % (self.file_name), self.evaluations)
+
+                        if self.total_timesteps >= self.training_config['follow_goals_timesteps']:
+                            self.env.follow_flag = True
+
+                        self.obs = new_obs
+                        self.avg_reward += reward
+                        self.episode_timesteps += 1
+                        self.total_timesteps += 1
+
+                    else:
+
+                        self.avg_reward /= self.episode_timesteps
+
+                        self.episode_num += 1
+                        self.episode_timesteps = 0
+
+                        print("---------------------------------------")
+                        print("Average Reward over the Evaluation Step: %f" % (self.avg_reward))
+                        print("---------------------------------------")
+
+                        '''if self.total_timesteps < self.training_config['start_timesteps']:
+                            self.policy.train(
+                                self.replay_buffer,
+                                self.episode_timesteps,
+                                self.training_config['batch_size'],
+                                self.training_config['discount'],
+                                self.training_config['tau'],
+                                self.training_config['policy_noise'],
+                                self.training_config['noise_clip'],
+                                self.training_config['policy_freq']
+                            )'''
+
+                else:
+                    if self.training_config['save_models']:
+                        self.policy.save("%s" % (self.file_name), directory="./pytorch_models")
+                        np.save("./results/%s" % (self.file_name), self.evaluations)
+
+                    #self.evaluations.append(evaluate_policy(self.env, self.policy))
+
+                    self.clk.cancel()
+
             elif self.mode == 'eval':
-                pass
+
+                if self.episode_timesteps == 0:
+                    print('Episode: ', self.episode_num, ' | Total timesteps: ', self.total_timesteps)
+                    self.obs = self.env.reset(seed=self.seed)
+                    self.avg_reward = 0.
+
+                if self.episode_num < self.eval_episodes:
+                    done = False
+                    if self.episode_timesteps < self.training_config['max_episode_steps']:
+                        action = self.policy.select_action(np.array(self.obs))
+                        self.obs, reward, done, _ = self.env.step(action)
+                        self.avg_reward += reward
+                        self.episode_timesteps += 1
+                        self.total_timesteps += 1
+                    else:
+
+                        self.avg_reward /= self.episode_timesteps
+
+                        self.episode_num += 1
+                        self.episode_timesteps = 0
+
+                        print("---------------------------------------")
+                        print("Average Reward over the Evaluation Step: %f" % (self.avg_reward))
+                        print("---------------------------------------")
+
+                else:
+                    self.clk.cancel()
+
+
             else:
                 # Take a random action
                 action = self.env.action_space.sample()
@@ -174,6 +312,7 @@ class CarApp(App):
                     self.env.reset(seed=self.seed)
 
 
+
         self.clk = Clock.schedule_interval(render, 1.0/60.0 )
 
 
@@ -184,5 +323,5 @@ class CarApp(App):
 
 # Running the whole thing
 if __name__ == '__main__':
-    app = CarApp(mode='train')
+    app = CarApp(mode='train2')
     app.run()
