@@ -10,7 +10,7 @@ from kivy.clock import Clock
 import numpy as np
 import random
 
-from model import TD3, ReplayBuffer, evaluate_policy
+from model_light import TD3, ReplayBuffer, evaluate_policy
 
 Config.set('graphics', 'resizable', False)
 Config.set('graphics', 'width', '2788')
@@ -69,14 +69,14 @@ class CarApp(App):
             self.episode_reward = 0.0
 
         elif self.mode in ['eval']:
-            self.seed = 9890
+            self.seed = 1620
             self.env.follow_flag = True
             self.total_timesteps = 0
             self.episode_num = 0
             self.episode_timesteps = 0
             self.episode_reward = 0.0
 
-            self.file_name = "%s_%s_%s" % ("Saved_TD3", self.training_config['env_name'], str(self.seed))
+            self.file_name = "%s_%s_%s" % ("Saved_light_TD3", self.training_config['env_name'], str(self.seed))
             print("---------------------------------------")
             print("Settings: %s" % (self.file_name))
             print("---------------------------------------")
