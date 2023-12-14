@@ -76,7 +76,7 @@ class CarApp(App):
             self.episode_timesteps = 0
             self.episode_reward = 0.0
 
-            self.file_name = "%s_%s_%s" % ("TD3", self.training_config['env_name'], str(self.seed))
+            self.file_name = "%s_%s_%s" % ("Saved_TD3", self.training_config['env_name'], str(self.seed))
             print("---------------------------------------")
             print("Settings: %s" % (self.file_name))
             print("---------------------------------------")
