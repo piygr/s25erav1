@@ -41,7 +41,7 @@ class CarApp(App):
                 noise_clip = 0.5,
                 policy_freq = 2,
                 env_name = 'MapEnv',
-                max_episode_steps = 1500,
+                max_episode_steps = 3000,
                 follow_goals_timesteps=0
             )
 
@@ -69,7 +69,7 @@ class CarApp(App):
             self.episode_reward = 0.0
 
         elif self.mode in ['eval']:
-            self.seed = 3249
+            self.seed = 9890
             self.env.follow_flag = True
             self.total_timesteps = 0
             self.episode_num = 0
@@ -323,5 +323,5 @@ class CarApp(App):
 
 # Running the whole thing
 if __name__ == '__main__':
-    app = CarApp(mode='train2')
+    app = CarApp(mode='eval')
     app.run()

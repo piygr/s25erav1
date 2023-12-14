@@ -101,7 +101,7 @@ class MapEnv(gym.Env):
 
         self.observation_space = self._get_observation_space()
         self.state = {}
-        self.canvas.car.center = (1132, 1092)
+        self.canvas.car.center_x, self.canvas.car.center_y = (1132, 1092)
         self.max_speed = 2.0
         self.follow_flag = False
 
@@ -257,15 +257,15 @@ class MapEnv(gym.Env):
 
         self.canvas.car.angle = self.canvas.car.angle + self.canvas.car.rotation
 
-        self.canvas.car.sensor1 = Vector(30, 0).rotate(self.canvas.car.angle) + self.canvas.car.center
-        self.canvas.car.sensor2 = Vector(30, 0).rotate((self.canvas.car.angle + 30) % 360) + self.canvas.car.center
-        self.canvas.car.sensor3 = Vector(30, 0).rotate((self.canvas.car.angle - 30) % 360) + self.canvas.car.center
+        self.canvas.car.sensor1_x, self.canvas.car.sensor1_y  = Vector(30, 0).rotate(self.canvas.car.angle) + (self.canvas.car.center_x, self.canvas.car.center_y)
+        self.canvas.car.sensor2_x, self.canvas.car.sensor2_y = Vector(30, 0).rotate((self.canvas.car.angle + 30) % 360) + (self.canvas.car.center_x, self.canvas.car.center_y)
+        self.canvas.car.sensor3_x, self.canvas.car.sensor3_y = Vector(30, 0).rotate((self.canvas.car.angle - 30) % 360) + (self.canvas.car.center_x, self.canvas.car.center_y)
 
-        self.canvas.ball1.center = self.canvas.car.sensor1
-        self.canvas.ball2.center = self.canvas.car.sensor2
-        self.canvas.ball3.center = self.canvas.car.sensor3
+        self.canvas.ball1.center_x, self.canvas.ball1.center_y  = self.canvas.car.sensor1_x, self.canvas.car.sensor1_y
+        self.canvas.ball2.center_x, self.canvas.ball2.center_y = self.canvas.car.sensor2_x, self.canvas.car.sensor2_y
+        self.canvas.ball3.center_x, self.canvas.ball3.center_y = self.canvas.car.sensor3_x, self.canvas.car.sensor3_y
 
-        self.canvas.car.center = Vector(new_speed, 0).rotate(self.canvas.car.angle) + self.canvas.car.center
+        self.canvas.car.center_x, self.canvas.car.center_y = Vector(new_speed, 0).rotate(self.canvas.car.angle) + (self.canvas.car.center_x, self.canvas.car.center_y)
 
         # return self.update_state()
 
@@ -274,7 +274,7 @@ class MapEnv(gym.Env):
         print("---------RESET---------")
 
         car_idx = random.randint(0, len(self.goal_positions) - 1)
-        self.canvas.car.center = self.goal_positions[car_idx]
+        self.canvas.car.center_x, self.canvas.car.center_y = self.goal_positions[car_idx]
         self.canvas.car.velocity = Vector(2, 0)
 
         self.goal_index = random.randint(0, len(self.goal_positions) - 1)
@@ -282,12 +282,12 @@ class MapEnv(gym.Env):
         if car_idx == self.goal_index:
             self.goal_index = (self.goal_index + 1) % len(self.goal_positions)
 
-        self.canvas.goalpost.pos = self.goal_positions[self.goal_index]
+        self.canvas.goalpost.x, self.canvas.goalpost.y  = self.goal_positions[self.goal_index]
 
         self.state = dict(
             car_signals=self.get_signals(),
-            car_position=self.canvas.car.center,
-            goal_position=np.array(self.canvas.goalpost.pos),
+            car_position=(self.canvas.car.center_x, self.canvas.car.center_y),
+            goal_position=np.array((self.canvas.goalpost.x, self.canvas.goalpost.y)),
             score=0.0
         )
 
