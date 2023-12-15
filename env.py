@@ -189,7 +189,7 @@ class MapEnv(gym.Env):
 
             if self.follow_flag:
                 if distance < self.state.get('distance'):
-                    reward = 0.6
+                    reward += 0.6
 
 
         if distance < 25:
