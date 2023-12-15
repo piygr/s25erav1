@@ -165,7 +165,7 @@ class TD3(object):
             self.critic_optimizer.step()
 
             # Step 13: Once every two iterations, we update our Actor model by performing gradient ascent on the output of the first Critic model
-            if it % policy_freq == 0:
+            if (it+1) % policy_freq == 0:
                 actor_loss = -self.critic.Q1(state, self.actor(state)).mean()
                 self.actor_optimizer.zero_grad()
                 actor_loss.backward()

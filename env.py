@@ -150,7 +150,7 @@ class MapEnv(gym.Env):
         xx =  goal[0] - int(self.canvas.car.center_x)
         yy = goal[1] - int(self.canvas.car.center_y)
         orientation = Vector(*self.canvas.car.velocity).angle((xx, yy)) / 180.0
-        orientation = round(orientation, 3)
+        #orientation = round(orientation, 3)
 
         return orientation
 
@@ -185,11 +185,11 @@ class MapEnv(gym.Env):
             reward = -1.0
 
         else:  # otherwise
-            reward = 1.0
+            reward = -0.2
 
-            if self.follow_flag:
-                if distance < self.state.get('distance'):
-                    reward += 0.6
+            #if self.follow_flag:
+            if distance < self.state.get('distance'):
+                reward = 0.1 + np.clip((10.0 / distance), 0.0001, 0.9)
 
 
         if distance < 25:
@@ -199,25 +199,25 @@ class MapEnv(gym.Env):
             self.canvas.goalpost.y = self.goal_positions[self.goal_index][1]
 
             reward += 1.0
-            #done = False
+            #done = True
 
         if self.canvas.car.x < 20:
             self.canvas.car.x = 20
-            reward = -10.0
+            reward = -1.0
 
         elif self.canvas.car.x > self.map_size[0] - 20:
             self.canvas.car.x = self.map_size[0] - 20
-            reward = -10.0
+            reward = -1.0
 
         if self.canvas.car.y < 20:
             self.canvas.car.y = 20
-            reward = -10.0
+            reward = -1.0
 
         elif self.canvas.car.y > self.map_size[1] - 20:
             self.canvas.car.y = self.map_size[1] - 20
-            reward = -10.0
+            reward = -1.0
 
-        reward = round(reward, 2)
+        reward = reward
         score = self.state['score'] + reward
 
         self.state.update(
