@@ -129,7 +129,7 @@ class MapEnv(gym.Env):
                 int(self.canvas.car.sensor1_y) - 10:int(self.canvas.car.sensor1_y) + 10
                 ]
             )
-        ) / 400., 2)
+        ) / 400., 3)
 
         s2 = round(int(
             np.sum(
@@ -138,7 +138,7 @@ class MapEnv(gym.Env):
                 int(self.canvas.car.sensor2_y) - 10:int(self.canvas.car.sensor2_y) + 10
                 ]
             )
-        ) / 400., 2)
+        ) / 400., 3)
 
         s3 = round(int(
             np.sum(
@@ -147,7 +147,7 @@ class MapEnv(gym.Env):
                 int(self.canvas.car.sensor3_y) - 10:int(self.canvas.car.sensor3_y) + 10
                 ]
             )
-        ) / 400., 2)
+        ) / 400., 3)
 
         return [s1, s2, s3]
 
